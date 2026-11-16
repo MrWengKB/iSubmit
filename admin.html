@@ -382,12 +382,16 @@ $('save').onclick=async()=>{
 // ---------------- 提交情况 ----------------
 function buildSubsSelect(){
   const sel=$('subAssign'); const prev=sel.value; sel.innerHTML='';
-  if(!data.assignments.length){
+  // 每个「班级 / 作业」组合一个选项，按班级排列
+  const pairs=[];
+  data.classes.forEach(c=>data.assignments.forEach(a=>{ if(a.classIds.includes(c.id)) pairs.push({c,a}); }));
+  if(!pairs.length){
     sel.append(el('option',{value:''},t('a.noAssignOpt'))); sel.disabled=true;
   } else {
     sel.disabled=false;
-    data.assignments.forEach(a=>sel.append(el('option',{value:a.id},(a.name||t('a.unnamed'))+(a.open?'':t('a.closedSuffix')))));
-    if(data.assignments.some(a=>a.id===prev)) sel.value=prev;
+    pairs.forEach(({c,a})=>sel.append(el('option',{value:c.id+'|'+a.id},
+      (c.name||t('a.unnamedClass'))+' / '+(a.name||t('a.unnamed'))+(a.open?'':t('a.closedSuffix')))));
+    if(pairs.some(({c,a})=>c.id+'|'+a.id===prev)) sel.value=prev;
   }
   const L=$('links'); L.innerHTML='';
   if(meta.rootUrl) L.append(el('a',{href:meta.rootUrl,target:'_blank',rel:'noopener'},t('a.openRoot')));
@@ -397,13 +401,14 @@ $('subAssign').onchange=loadSubs;
 $('subRefresh').onclick=loadSubs;
 
 async function loadSubs(){
-  const id=$('subAssign').value;
-  if(!data.assignments.length){ subsState={kind:'none'}; return paintSubs(); }
-  if(!id) return;
+  const val=$('subAssign').value;
+  if(!val){ subsState={kind:'none'}; return paintSubs(); }
+  const [cid, id]=val.split('|');
   subsState={kind:'loading'}; paintSubs();
   let r;
   try{ r=await adminApi('adminSubmissions',{assignmentId:id}); }catch(e){ return; }
-  if($('subAssign').value!==id) return;   // 用户已切换到别的作业
+  if($('subAssign').value!==val) return;   // 用户已切换到别的选项
+  if(r.ok) r.classes=r.classes.filter(c=>c.id===cid);   // 只显示选中的班级
   subsState = r.ok ? {kind:'data', r} : {kind:'err', raw:r.error};
   paintSubs();
 }

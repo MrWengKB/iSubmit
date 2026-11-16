@@ -383,12 +383,13 @@ function getLogSheet_() {
   const p = props_();
   const id = p.getProperty('LOG_ID');
   if (id) {
-    try {
-      const ss = SpreadsheetApp.openById(id);
+    let ss = null;
+    try { ss = SpreadsheetApp.openById(id); } catch (e) {}   // 打不开（被删了）才新建
+    if (ss) {
       const sh = ss.getSheets()[0];
-      migrateLog_(ss, sh);
+      try { migrateLog_(ss, sh); } catch (e) {}              // 转换失败也继续用原表
       return sh;
-    } catch (e) {}
+    }
   }
   const ss = SpreadsheetApp.create(LOG_NAME);
   DriveApp.getFileById(ss.getId()).moveTo(getRootFolder_());
