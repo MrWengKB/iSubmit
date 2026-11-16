@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>iSubmit · 管理</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap}
+  nav.tabs button{border:0;background:none;padding:10px 14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+  nav.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  .item{border:1px solid var(--line);border-radius:10px;padding:16px;background:#fff;margin-bottom:12px}
+  .item-head{display:flex;gap:10px;align-items:center}
+  .item-head input{flex:1;font-weight:600}
+  .count{font-size:13px;color:var(--muted)}
+  .checks{display:flex;flex-wrap:wrap;gap:6px 0;margin-top:4px}
+  .savebar{position:sticky;bottom:0;background:var(--bg);padding:12px 0;display:flex;gap:12px;align-items:center;border-top:1px solid var(--line);margin-top:8px}
+  .savebar .dirty{color:var(--warn);font-size:13px}
+  .empty{color:var(--muted);text-align:center;padding:20px;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:13px;color:var(--muted);font-weight:600}
+  .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px}
+  .tag.ok{background:var(--accent-2);color:var(--accent)}
+  .tag.no{background:var(--err-2);color:var(--err)}
+  .tag.link{background:#e8eef8;color:#2d4f86;text-decoration:none}
+  .tag.late{background:#fbf0de;color:var(--warn)}
+  .summary{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+  .summary b{font-size:20px}
+  .links a{margin-right:14px;font-size:14px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .toolbar select{width:auto;flex:1;min-width:200px}
+  .class-block{margin-top:18px}
+  .class-block h3{font-size:15px;margin:0;display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<main class="wide">
+  <header>
+    <div>
+      <h1>i<span>Submit</span> 管理</h1>
+      <p>设置班级、学生名单和作业，查看提交情况</p>
+    </div>
+    <button id="logout" class="btn ghost small" hidden>退出</button>
+  </header>
+
+  <div id="loading" class="card loading">正在连接…</div>
+
+  <!-- 首次设置 / 登录 -->
+  <form id="auth" class="card" hidden style="max-width:420px">
+    <h2 id="authTitle">登录</h2>
+    <p id="authHint" class="hint"></p>
+    <label for="pw">管理密码</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <div id="pw2Wrap" hidden>
+      <label for="pw2">再输入一次</label>
+      <input id="pw2" type="password" autocomplete="new-password">
+    </div>
+    <button class="btn block" type="submit" id="authBtn">登录</button>
+    <div id="authMsg" class="msg"></div>
+  </form>
+
+  <!-- 主界面 -->
+  <div id="app" hidden>
+    <nav class="tabs">
+      <button data-tab="subs" class="on">提交情况</button>
+      <button data-tab="classes">班级与名单</button>
+      <button data-tab="assignments">作业</button>
+      <button data-tab="settings">设置</button>
+    </nav>
+
+    <!-- 提交情况 -->
+    <section id="tab-subs" class="card">
+      <div class="toolbar">
+        <select id="subAssign"></select>
+        <button class="btn small" id="subRefresh">刷新</button>
+      </div>
+      <div id="subBody"></div>
+      <div class="links" id="links" style="margin-top:16px"></div>
+    </section>
+
+    <!-- 班级 -->
+    <section id="tab-classes" class="card" hidden>
+      <h2>班级与学生名单</h2>
+      <p class="hint">每行一个学生名字，可以直接从 Excel 复制一列粘贴进来。学生提交时会从名单中选择自己的名字。</p>
+      <div id="classList"></div>
+      <button class="btn ghost small" id="addClass">＋ 添加班级</button>
+    </section>
+
+    <!-- 作业 -->
+    <section id="tab-assignments" class="card" hidden>
+      <h2>作业</h2>
+      <p class="hint">勾选哪些班级需要交这份作业。截止时间留空表示不限时。取消「开放提交」后学生将看不到这份作业。</p>
+      <div id="assignList"></div>
+      <button class="btn ghost small" id="addAssign">＋ 添加作业</button>
+    </section>
+
+    <!-- 设置 -->
+    <section id="tab-settings" class="card" hidden>
+      <h2>提交设置</h2>
+      <label for="sCode">提交口令</label>
+      <input id="sCode" type="text" placeholder="留空表示不需要口令">
+      <div class="hint">建议设置，并在课上告诉学生，防止陌生人乱传文件。</div>
+
+      <div class="row">
+        <div>
+          <label for="sMax">单个文件大小上限（MB）</label>
+          <input id="sMax" type="number" min="1" max="35">
+          <div class="hint">最大 35</div>
+        </div>
+        <div>
+          <label>截止后</label>
+          <label class="inline" style="margin-top:10px"><input type="checkbox" id="sLate"> 仍可提交（标记为迟交）</label>
+        </div>
+      </div>
+
+      <label for="sExt">允许的文件类型</label>
+      <input id="sExt" type="text" placeholder="例如：pdf, docx, jpg（留空表示不限制）">
+
+      <h2 style="margin-top:28px">修改管理密码</h2>
+      <div class="row">
+        <div><label for="np1">新密码</label><input id="np1" type="password" autocomplete="new-password"></div>
+        <div><label for="np2">再输入一次</label><input id="np2" type="password" autocomplete="new-password"></div>
+      </div>
+      <button class="btn small" id="changePw" style="margin-top:12px">修改密码</button>
+      <div id="pwMsg" class="msg"></div>
+    </section>
+
+    <div class="savebar" id="savebar" hidden>
+      <button class="btn" id="save">保存设置</button>
+      <span id="dirty" class="dirty"></span>
+      <span id="saveMsg" class="hint"></span>
+    </div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+const URL_ = window.ISUBMIT_URL || '';
+const $ = id => document.getElementById(id);
+let password = '', data = null, meta = {}, dirty = false, tab = 'subs';
+
+async function api(body){
+  const r = await fetch(URL_, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)});
+  return r.json();
+}
+async function adminApi(action, extra){
+  const res = await api(Object.assign({action, password}, extra||{}));
+  if(!res.ok && res.auth){ logout(res.error); throw new Error(res.error); }
+  return res;
+}
+function el(tag, attrs, ...kids){
+  const e=document.createElement(tag);
+  for(const k in (attrs||{})){
+    const v=attrs[k];
+    if(k==='class') e.className=v;
+    else if(k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if(k==='value') e.value=v;
+    else if(k in e && typeof v!=='string') e[k]=v;
+    else e.setAttribute(k, v);
+  }
+  kids.flat(Infinity).forEach(c=>{ if(c!=null) e.append(c.nodeType?c:document.createTextNode(c)); });
+  return e;
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function showMsg(m,type,text){ m.className='msg show '+type; m.textContent=text; }
+function hideMsg(m){ m.className='msg'; }
+function toLocalInput(iso){ if(!iso) return ''; const d=new Date(iso); return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+function fmt(iso){ return iso ? new Date(iso).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''; }
+function setDirty(v){ dirty=v; $('dirty').textContent = v ? '有未保存的修改' : ''; if(v) $('saveMsg').textContent=''; }
+window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
+
+// ---------------- 登录 ----------------
+let setupMode=false;
+async function start(){
+  if(!URL_ || URL_.includes('在此粘贴')){ $('loading').innerHTML='请先在 config.js 中填写 Apps Script 网址。'; return; }
+  let st;
+  try{ st = await api({action:'adminStatus'}); }catch(e){ $('loading').textContent='无法连接 Apps Script，请检查 config.js 中的网址和部署设置。'; return; }
+  $('loading').hidden=true;
+  setupMode = !st.hasPassword;
+  const saved = sessionStorage.getItem('isubmit-admin');
+  if(!setupMode && saved){ password=saved; if(await enter()) return; }
+  showAuth();
+}
+function showAuth(err){
+  $('app').hidden=true; $('logout').hidden=true; $('auth').hidden=false;
+  $('authTitle').textContent = setupMode ? '首次使用：设置管理密码' : '登录';
+  $('authHint').textContent = setupMode ? '请立即设置密码（至少 6 位）。设置之后，只有知道密码的人能进入管理页。' : '';
+  $('authBtn').textContent = setupMode ? '设置并进入' : '登录';
+  $('pw2Wrap').hidden = !setupMode;
+  $('pw').autocomplete = setupMode ? 'new-password' : 'current-password';
+  if(err) showMsg($('authMsg'),'err',err); else hideMsg($('authMsg'));
+  $('pw').focus();
+}
+$('auth').addEventListener('submit', async e=>{
+  e.preventDefault(); hideMsg($('authMsg'));
+  const pw=$('pw').value;
+  if(setupMode){
+    if(pw.length<6) return showMsg($('authMsg'),'err','密码至少 6 位');
+    if(pw!==$('pw2').value) return showMsg($('authMsg'),'err','两次输入不一致');
+    const r = await api({action:'adminSetup', password:pw});
+    if(!r.ok) return showMsg($('authMsg'),'err',r.error);
+    setupMode=false;
+  }
+  password=pw;
+  $('authBtn').disabled=true;
+  await enter();
+  $('authBtn').disabled=false;
+});
+async function enter(){
+  let r;
+  try{ r = await adminApi('adminGet'); }catch(e){ return false; }
+  sessionStorage.setItem('isubmit-admin', password);
+  data=r.data; meta={rootUrl:r.rootUrl, sheetUrl:r.sheetUrl};
+  $('auth').hidden=true; $('app').hidden=false; $('logout').hidden=false; $('pw').value=''; $('pw2').value='';
+  renderAll(); setDirty(false); switchTab(tab);
+  return true;
+}
+function logout(msg){
+  password=''; sessionStorage.removeItem('isubmit-admin');
+  setDirty(false); showAuth(msg);
+}
+$('logout').onclick=()=>logout();
+
+// ---------------- 标签页 ----------------
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+function switchTab(t){
+  tab=t;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+  ['subs','classes','assignments','settings'].forEach(x=>$('tab-'+x).hidden = x!==t);
+  $('savebar').hidden = t==='subs';
+  if(t==='subs') renderSubsSelect();
+}
+
+function renderAll(){ renderClasses(); renderAssignments(); renderSettings(); }
+
+// ---------------- 班级 ----------------
+function renderClasses(){
+  const box=$('classList'); box.innerHTML='';
+  if(!data.classes.length) box.append(el('div',{class:'empty'},'还没有班级，点下方「添加班级」开始。'));
+  data.classes.forEach(c=>{
+    const count=el('span',{class:'count'});
+    const upd=()=>{ count.textContent=c.students.length+' 人'; };
+    const ta=el('textarea',{placeholder:'张三\n李四\n王五', value:c.students.join('\n'),
+      oninput:e=>{ c.students=e.target.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); upd(); setDirty(true); }});
+    upd();
+    box.append(el('div',{class:'item'},
+      el('div',{class:'item-head'},
+        el('input',{type:'text', value:c.name, placeholder:'班级名称，例如：三年二班', oninput:e=>{c.name=e.target.value; setDirty(true);}}),
+        count,
+        el('button',{class:'btn danger', type:'button', onclick:()=>{
+          if(!confirm('删除班级「'+(c.name||'未命名')+'」？已提交的文件不会被删除。')) return;
+          data.classes=data.classes.filter(x=>x!==c);
+          data.assignments.forEach(a=>a.classIds=a.classIds.filter(id=>id!==c.id));
+          renderAll(); setDirty(true);
+        }},'删除')),
+      el('label',{},'学生名单（每行一个）'), ta));
+  });
+}
+$('addClass').onclick=()=>{
+  data.classes.push({id:uid(), name:'', students:[]});
+  renderClasses(); renderAssignments(); setDirty(true);
+  const inputs=$('classList').querySelectorAll('.item-head input'); inputs[inputs.length-1].focus();
+};
+
+// ---------------- 作业 ----------------
+function renderAssignments(){
+  const box=$('assignList'); box.innerHTML='';
+  if(!data.assignments.length) box.append(el('div',{class:'empty'},'还没有作业，点下方「添加作业」开始。'));
+  data.assignments.forEach(a=>{
+    const checks=el('div',{class:'checks'});
+    if(!data.classes.length) checks.append(el('span',{class:'hint'},'请先在「班级与名单」中添加班级'));
+    data.classes.forEach(c=>{
+      checks.append(el('label',{class:'inline'},
+        el('input',{type:'checkbox', checked:a.classIds.includes(c.id), onchange:e=>{
+          a.classIds = e.target.checked ? [...a.classIds, c.id] : a.classIds.filter(x=>x!==c.id); setDirty(true);
+        }}), c.name||'（未命名班级）'));
+    });
+    box.append(el('div',{class:'item'},
+      el('div',{class:'item-head'},
+        el('input',{type:'text', value:a.name, placeholder:'作业标题，例如：第1次作业', oninput:e=>{a.name=e.target.value; setDirty(true);}}),
+        el('button',{class:'btn danger', type:'button', onclick:()=>{
+          if(!confirm('删除作业「'+(a.name||'未命名')+'」？已提交的文件不会被删除。')) return;
+          data.assignments=data.assignments.filter(x=>x!==a); renderAssignments(); setDirty(true);
+        }},'删除')),
+      el('div',{class:'row'},
+        el('div',{},
+          el('label',{},'截止时间'),
+          el('input',{type:'datetime-local', value:toLocalInput(a.deadline), onchange:e=>{
+            a.deadline = e.target.value ? new Date(e.target.value).toISOString() : ''; setDirty(true);
+          }})),
+        el('div',{},
+          el('label',{},'状态'),
+          el('label',{class:'inline', style:'margin-top:10px'},
+            el('input',{type:'checkbox', checked:a.open, onchange:e=>{a.open=e.target.checked; setDirty(true);}}),'开放提交'))),
+      el('label',{},'需要提交的班级'), checks));
+  });
+}
+$('addAssign').onclick=()=>{
+  data.assignments.unshift({id:uid(), name:'', classIds:data.classes.map(c=>c.id), deadline:'', open:true});
+  renderAssignments(); setDirty(true);
+  $('assignList').querySelector('.item-head input').focus();
+};
+
+// ---------------- 设置 ----------------
+function renderSettings(){
+  const s=data.settings;
+  $('sCode').value=s.accessCode; $('sMax').value=s.maxFileMB; $('sLate').checked=s.allowLate;
+  $('sExt').value=s.allowedExt.join(', ');
+}
+$('sCode').oninput=e=>{ data.settings.accessCode=e.target.value.trim(); setDirty(true); };
+$('sMax').oninput=e=>{ data.settings.maxFileMB=Number(e.target.value)||20; setDirty(true); };
+$('sLate').onchange=e=>{ data.settings.allowLate=e.target.checked; setDirty(true); };
+$('sExt').oninput=e=>{ data.settings.allowedExt=e.target.value.split(/[,，\s]+/).map(x=>x.replace(/^\./,'').toLowerCase()).filter(Boolean); setDirty(true); };
+
+$('changePw').onclick=async()=>{
+  const m=$('pwMsg'); hideMsg(m);
+  const a=$('np1').value, b=$('np2').value;
+  if(a.length<6) return showMsg(m,'err','密码至少 6 位');
+  if(a!==b) return showMsg(m,'err','两次输入不一致');
+  try{
+    const r=await adminApi('adminPassword',{newPassword:a});
+    if(!r.ok) return showMsg(m,'err',r.error);
+    password=a; sessionStorage.setItem('isubmit-admin',a);
+    $('np1').value=$('np2').value=''; showMsg(m,'ok','密码已修改');
+  }catch(_){}
+};
+
+// ---------------- 保存 ----------------
+function validate(){
+  for(const c of data.classes){
+    if(!c.name.trim()) return '有班级没有填写名称';
+    const dup=c.students.find((s,i)=>c.students.indexOf(s)!==i);
+    if(dup) return '「'+c.name+'」中有重名学生：'+dup+'（请加以区分，例如 '+dup+'A / '+dup+'B）';
+  }
+  const names=data.classes.map(c=>c.name.trim());
+  const dupC=names.find((n,i)=>names.indexOf(n)!==i);
+  if(dupC) return '班级名称重复：'+dupC;
+  for(const a of data.assignments){
+    if(!a.name.trim()) return '有作业没有填写标题';
+    if(a.open && !a.classIds.length) return '作业「'+a.name+'」没有勾选任何班级';
+  }
+  return '';
+}
+$('save').onclick=async()=>{
+  const err=validate();
+  if(err){ $('saveMsg').textContent=''; alert(err); return; }
+  $('save').disabled=true; $('saveMsg').textContent='保存中…';
+  try{
+    const r=await adminApi('adminSave',{data});
+    if(!r.ok){ $('saveMsg').textContent=''; alert(r.error); return; }
+    data=r.data; renderAll(); setDirty(false);
+    $('saveMsg').textContent='已保存 · '+new Date().toLocaleTimeString('zh-CN');
+  }catch(e){ $('saveMsg').textContent='保存失败：'+e.message; }
+  finally{ $('save').disabled=false; }
+};
+
+// ---------------- 提交情况 ----------------
+function renderSubsSelect(){
+  const sel=$('subAssign'); const prev=sel.value; sel.innerHTML='';
+  if(!data.assignments.length){
+    sel.append(el('option',{value:''},'暂无作业')); sel.disabled=true;
+    $('subBody').innerHTML=''; $('subBody').append(el('div',{class:'empty'},'先到「作业」中添加作业并保存。'));
+  } else {
+    sel.disabled=false;
+    data.assignments.forEach(a=>sel.append(el('option',{value:a.id},(a.name||'未命名')+(a.open?'':'（已关闭）'))));
+    if(data.assignments.some(a=>a.id===prev)) sel.value=prev;
+    loadSubs();
+  }
+  const L=$('links'); L.innerHTML='';
+  if(meta.rootUrl) L.append(el('a',{href:meta.rootUrl,target:'_blank',rel:'noopener'},'打开 Drive 作业文件夹 ↗'));
+  if(meta.sheetUrl) L.append(el('a',{href:meta.sheetUrl,target:'_blank',rel:'noopener'},'打开提交登记表 ↗'));
+}
+$('subAssign').onchange=loadSubs;
+$('subRefresh').onclick=loadSubs;
+
+async function loadSubs(){
+  const id=$('subAssign').value, body=$('subBody');
+  if(!id) return;
+  body.innerHTML=''; body.append(el('div',{class:'loading'},'加载中…'));
+  let r;
+  try{ r=await adminApi('adminSubmissions',{assignmentId:id}); }catch(e){ return; }
+  body.innerHTML='';
+  if(!r.ok){ body.append(el('div',{class:'empty'}, r.error==='作业不存在' ? '这份作业还没有保存，请先点「保存设置」。' : r.error)); return; }
+
+  let total=0, done=0;
+  r.classes.forEach(c=>c.students.forEach(s=>{ total++; if(s.count) done++; }));
+  body.append(el('div',{class:'summary'},
+    el('span',{}, el('b',{},String(done)),' / '+total+' 人已提交'),
+    r.assignment.deadline ? el('span',{class:'hint'},'截止 '+fmt(r.assignment.deadline)) : null,
+    r.folderUrl ? el('a',{href:r.folderUrl,target:'_blank',rel:'noopener'},'打开本作业文件夹 ↗') : null));
+  if(!r.classes.length) body.append(el('div',{class:'empty'},'这份作业没有勾选班级。'));
+
+  r.classes.forEach(c=>{
+    const missing=c.students.filter(s=>!s.count).map(s=>s.name);
+    const tbody=el('tbody');
+    c.students.forEach(s=>tbody.append(el('tr',{},
+      el('td',{},s.name),
+      el('td',{}, s.count ? el('span',{class:'tag ok'},'已交'+(s.count>1?' '+s.count+' 份':'')) : el('span',{class:'tag no'},'未交'),
+        s.late ? ' ' : null, s.late ? el('span',{class:'tag late'},'迟交') : null,
+        (s.links||[]).map((u,i)=>[' ', el('a',{href:u,target:'_blank',rel:'noopener noreferrer',class:'tag link',title:u},'链接'+((s.links.length>1)?(i+1):'')+' ↗')])),
+      el('td',{class:'hint'}, fmt(s.last)))));
+    body.append(el('div',{class:'class-block'},
+      el('h3',{}, el('span',{}, c.name+'　',el('span',{class:'count'},(c.students.length-missing.length)+' / '+c.students.length)),
+        missing.length ? el('button',{class:'btn ghost small',type:'button',onclick:async ev=>{
+          const t=c.name+' 未交（'+missing.length+'人）：'+missing.join('、');
+          try{ await navigator.clipboard.writeText(t); ev.target.textContent='已复制'; }catch(_){ prompt('复制未交名单：',t); }
+        }},'复制未交名单') : null),
+      c.students.length ? el('table',{}, el('thead',{},el('tr',{},el('th',{},'姓名'),el('th',{},'状态'),el('th',{},'最后提交'))), tbody)
+        : el('div',{class:'empty'},'该班级名单为空')));
+  });
+}
+
+start();
+</script>
+</body>
+</html>

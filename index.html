@@ -1,1 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iSubmit · 作业提交</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .deadline{font-size:13px;margin-top:6px}
+  .deadline.late{color:var(--warn)}
+  .drop{border:1.5px dashed #c9c1b0;border-radius:10px;padding:22px;text-align:center;cursor:pointer;
+    color:var(--muted);transition:.15s;background:#fff}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-2);color:var(--accent)}
+  .drop strong{color:var(--ink)}
+  ul.files{list-style:none;padding:0;margin:10px 0 0}
+  ul.files li{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);
+    border-radius:8px;margin-top:6px;font-size:14px;background:#fff}
+  .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fsize{color:var(--muted);font-size:12px}
+  .status{font-size:12px;min-width:56px;text-align:right}
+  .status.ok{color:var(--accent)} .status.err{color:var(--err)}
+  .rm{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:0 2px}
+  .linkbox{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line)}
+  .linktip{font-size:14px;margin-bottom:8px}
+  input[type=url]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;color:inherit}
+  input[type=url]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  .receipt{font-family:ui-monospace,Menlo,monospace;font-size:13px;margin-top:6px;color:var(--ink);white-space:pre-line}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>i<span>Submit</span></h1>
+      <p>作业提交 · 文件只有老师能看到</p>
+    </div>
+  </header>
 
+  <div class="card">
+    <div id="loading" class="loading">正在加载…</div>
+
+    <!-- 口令 -->
+    <form id="codeForm" hidden>
+      <label for="code">提交口令</label>
+      <input id="code" type="password" autocomplete="off">
+      <div class="hint">口令由老师在课上告知</div>
+      <button class="btn block" type="submit">继续</button>
+      <div id="codeMsg" class="msg"></div>
+    </form>
+
+    <!-- 提交 -->
+    <form id="form" hidden novalidate>
+      <label for="cls">班级</label>
+      <select id="cls"></select>
+
+      <label for="name">姓名</label>
+      <select id="name"></select>
+
+      <label for="assignment">作业</label>
+      <select id="assignment"></select>
+      <div id="deadline" class="deadline"></div>
+
+      <label>文件</label>
+      <div id="drop" class="drop" tabindex="0">
+        <strong>点击选择</strong> 或把文件拖到这里
+        <div id="limits" class="hint"></div>
+      </div>
+      <input id="picker" type="file" multiple hidden>
+      <ul id="files" class="files"></ul>
+
+      <div class="linkbox">
+        <div class="linktip">文件太大？请存到自己的Google Drive再分享链接给我。</div>
+        <input id="link" type="url" placeholder="粘贴分享链接，例如 https://drive.google.com/…" autocomplete="off">
+        <div class="hint">分享时请把权限设为「知道链接的任何人都可以查看」，否则老师打不开。</div>
+      </div>
+
+      <button id="submit" class="btn block" type="submit">提交作业</button>
+      <div id="msg" class="msg"></div>
+    </form>
+  </div>
+
+  <footer>可以多次提交，之前的文件会保留。</footer>
+</main>
+
+<script src="config.js"></script>
+<script>
+const URL_ = window.ISUBMIT_URL || '';
+const $ = id => document.getElementById(id);
+let cfg = null, code = '', queue = [], busy = false;
+
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem('isubmit-'+k)); }catch(_){ return null; } },
+  set(k,v){ try{ localStorage.setItem('isubmit-'+k, JSON.stringify(v)); }catch(_){} },
+};
+
+async function api(body){
+  const r = await fetch(URL_, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)});
+  return r.json();
+}
+function fmtSize(b){ return b < 1048576 ? (b/1024).toFixed(0)+' KB' : (b/1048576).toFixed(1)+' MB'; }
+function fmtTime(iso){ return new Date(iso).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function showMsg(el, type, html){ el.className='msg show '+type; el.innerHTML=html; }
+function hideMsg(el){ el.className='msg'; }
+function opt(sel, value, text, disabled){ const o=document.createElement('option'); o.value=value; o.textContent=text; o.disabled=!!disabled; sel.appendChild(o); }
+
+async function load(tryCode){
+  if(!URL_ || URL_.includes('在此粘贴')){
+    $('loading').innerHTML='提交服务尚未配置。<div class="hint">请老师在 config.js 中填写网址。</div>'; return;
+  }
+  let res;
+  try{ res = await api({action:'config', code:tryCode}); }
+  catch(e){ $('loading').innerHTML='无法连接提交服务，请稍后再试。'; return; }
+
+  if(!res.ok && res.needsCode){
+    $('loading').hidden=true; $('codeForm').hidden=false;
+    if(res.error) showMsg($('codeMsg'),'err',res.error);
+    return;
+  }
+  if(!res.ok){ $('loading').textContent=res.error||'加载失败'; return; }
+
+  cfg = res; code = tryCode || '';
+  if(cfg.needsCode) store.set('code', code);
+  $('codeForm').hidden=true; $('loading').hidden=true;
+
+  if(!cfg.classes.length){ $('loading').hidden=false; $('loading').textContent='老师还没有设置班级。'; return; }
+
+  const c = $('cls'); c.innerHTML='';
+  opt(c,'','请选择班级');
+  cfg.classes.forEach(x=>opt(c,x.id,x.name));
+  c.onchange=()=>{ fillClass(); };
+  $('assignment').onchange=showDeadline;
+
+  $('limits').textContent='单个文件 ≤ '+cfg.maxFileMB+' MB'+(cfg.allowedExt.length?'；支持 '+cfg.allowedExt.join(', '):'');
+  if(cfg.allowedExt.length) $('picker').accept=cfg.allowedExt.map(e=>'.'+e).join(',');
+
+  const me = store.get('me') || {};
+  if(cfg.classes.some(x=>x.id===me.classId)) c.value=me.classId;
+  fillClass(me.name);
+  $('form').hidden=false;
+}
+
+function fillClass(preName){
+  const cid = $('cls').value;
+  const cls = cfg.classes.find(x=>x.id===cid);
+  const n = $('name'), a = $('assignment');
+  n.innerHTML=''; a.innerHTML='';
+  if(!cls){ opt(n,'','请先选择班级'); opt(a,'','请先选择班级'); n.disabled=a.disabled=true; showDeadline(); return; }
+  n.disabled=a.disabled=false;
+
+  opt(n,'','请选择你的名字');
+  cls.students.forEach(s=>opt(n,s,s));
+  if(preName && cls.students.includes(preName)) n.value=preName;
+
+  const list = cfg.assignments.filter(x=>x.classIds.includes(cid));
+  if(!list.length){ opt(a,'','本班暂无开放的作业'); a.disabled=true; }
+  list.forEach(x=>opt(a,x.id,x.name+(x.closed?'（已截止）':''),x.closed));
+  const first = list.find(x=>!x.closed); if(first) a.value=first.id;
+  showDeadline();
+}
+
+function showDeadline(){
+  const d=$('deadline');
+  const a = cfg && cfg.assignments.find(x=>x.id===$('assignment').value);
+  if(!a || !a.deadline){ d.textContent=''; d.className='deadline'; return; }
+  const late = new Date() > new Date(a.deadline);
+  d.className='deadline'+(late?' late':'');
+  d.textContent='截止：'+new Date(a.deadline).toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+
+    (late?(cfg.allowLate?' · 已过截止时间，提交将标记为迟交':' · 已截止'):'');
+}
+
+function addFiles(list){
+  hideMsg($('msg'));
+  for(const f of list){
+    const ext=(f.name.includes('.')?f.name.split('.').pop():'').toLowerCase();
+    let err='';
+    if(cfg.allowedExt.length && !cfg.allowedExt.includes(ext)) err='类型不支持';
+    else if(f.size > cfg.maxFileMB*1048576) err='超过 '+cfg.maxFileMB+'MB';
+    else if(!f.size) err='空文件';
+    const li=document.createElement('li');
+    li.innerHTML='<span class="fname"></span><span class="fsize"></span><span class="status"></span><button type="button" class="rm" title="移除">×</button>';
+    li.querySelector('.fname').textContent=f.name;
+    li.querySelector('.fsize').textContent=fmtSize(f.size);
+    const item={file:f, el:li, bad:!!err, done:false};
+    if(err) setStatus(item,'err',err);
+    li.querySelector('.rm').onclick=()=>{ if(busy) return; queue=queue.filter(q=>q!==item); li.remove(); };
+    $('files').appendChild(li); queue.push(item);
+  }
+}
+function setStatus(item, cls, text){ const s=item.el.querySelector('.status'); s.className='status '+cls; s.textContent=text; }
+function toBase64(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=()=>rej(new Error('读取文件失败')); r.readAsDataURL(file); });
+}
+
+async function submit(e){
+  e.preventDefault();
+  const msg=$('msg'); hideMsg(msg);
+  const classId=$('cls').value, name=$('name').value, assignmentId=$('assignment').value;
+  if(!classId) return showMsg(msg,'err','请选择班级');
+  if(!name) return showMsg(msg,'err','请选择你的名字');
+  if(!assignmentId) return showMsg(msg,'err','请选择作业');
+  const todo=queue.filter(q=>!q.bad && !q.done);
+  const link=$('link').value.trim();
+  if(link && !/^https?:\/\/\S+$/i.test(link)) return showMsg(msg,'err','链接格式不正确，应以 https:// 开头');
+  if(!todo.length && !link) return showMsg(msg,'err', queue.length?'没有可提交的文件':'请选择文件或填写分享链接');
+
+  store.set('me',{classId,name});
+  busy=true; $('submit').disabled=true; $('submit').textContent='正在提交…';
+  const receipts=[]; let failed=0;
+
+  for(const item of todo){
+    setStatus(item,'','上传中…');
+    try{
+      const data=await toBase64(item.file);
+      const res=await api({action:'submit', code, classId, name, assignmentId,
+        file:{name:item.file.name, type:item.file.type, data}});
+      if(!res.ok) throw new Error(res.error);
+      item.done=true; setStatus(item,'ok','✓ 已提交');
+      receipts.push(item.file.name+'  回执 '+res.receipt+(res.late?'（迟交）':''));
+    }catch(err){
+      failed++; setStatus(item,'err','失败');
+      showMsg(msg,'err',(err.message||'网络错误，请重试').replace(/</g,'&lt;'));
+    }
+  }
+  if(link){
+    try{
+      const res=await api({action:'submit', code, classId, name, assignmentId, link});
+      if(!res.ok) throw new Error(res.error);
+      receipts.push('链接  回执 '+res.receipt+(res.late?'（迟交）':''));
+      $('link').value='';
+    }catch(err){
+      failed++; showMsg(msg,'err',(err.message||'网络错误，请重试').replace(/</g,'&lt;'));
+    }
+  }
+  busy=false; $('submit').disabled=false; $('submit').textContent='提交作业';
+  if(receipts.length){
+    showMsg(msg, failed?'err':'ok',
+      (failed?'部分文件提交失败，可再次点击提交重试。':'提交成功！老师已收到你的作业。')+
+      '<div class="receipt">'+receipts.map(s=>s.replace(/</g,'&lt;')).join('\n')+'\n时间 '+fmtTime(new Date().toISOString())+'</div>');
+  }
+}
+
+const drop=$('drop'), picker=$('picker');
+drop.onclick=()=>picker.click();
+drop.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); picker.click(); } };
+picker.onchange=()=>{ addFiles(picker.files); picker.value=''; };
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+$('form').addEventListener('submit',submit);
+$('codeForm').addEventListener('submit',e=>{ e.preventDefault(); hideMsg($('codeMsg')); load($('code').value.trim()); });
+
+load(store.get('code')||'');
+</script>
+</body>
+</html>
