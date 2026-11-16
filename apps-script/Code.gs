@@ -25,7 +25,7 @@ const DEFAULT_DATA = {
 /** 部署前在编辑器里手动运行一次，完成授权 */
 function setup() {
   Logger.log('作业文件夹：' + getRootFolder_().getUrl());
-  Logger.log('提交登记表：' + getLogSheet_().getParent().getUrl());
+  Logger.log('Submission log: ' + getLogSheet_().getParent().getUrl());
   loadData_();
   Logger.log('完成。现在可以「部署 → 新建部署 → 网页应用」。');
 }
@@ -119,7 +119,7 @@ function submit_(req) {
       const fileName = latePrefix + safeName + '_LINK_' + stamp + '.txt';
       const file = folder.createFile(fileName, link + '\n', 'text/plain');
       file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
-      getLogSheet_().appendRow([now, a.name, cls.name, name, '(链接)', fileName, '', late ? '是' : '', link, a.id, cls.id]);
+      getLogSheet_().appendRow([now, a.name, cls.name, name, LINK_MARK, fileName, '', late ? LATE_MARK : '', link, a.id, cls.id]);
     } finally {
       lock.releaseLock();
     }
@@ -151,7 +151,7 @@ function submit_(req) {
 
     getLogSheet_().appendRow([
       now, a.name, cls.name, name, origName, fileName,
-      Math.round(bytes.length / 1024), late ? '是' : '', file.getUrl(), a.id, cls.id,
+      Math.round(bytes.length / 1024), late ? LATE_MARK : '', file.getUrl(), a.id, cls.id,
     ]);
   } finally {
     lock.releaseLock();
@@ -240,10 +240,10 @@ function adminSubmissions_(assignmentId) {
     const k = r[10] + '|' + r[3];
     const o = byKey[k] || (byKey[k] = { count: 0, last: null, late: false, links: [] });
     o.count++;
-    if (r[4] === '(链接)') o.links.push(String(r[8]));
+    if (r[4] === LINK_MARK || r[4] === '(链接)') o.links.push(String(r[8]));
     const t = new Date(r[0]);
     if (!o.last || t > o.last) o.last = t;
-    if (r[7] === '是') o.late = true;
+    if (r[7] === LATE_MARK || r[7] === '是') o.late = true;
   });
 
   return {
@@ -373,17 +373,42 @@ function assignmentFolder_(a, c) {
   return f;
 }
 
+const LOG_NAME = 'iSubmit Submission Log';
+const LOG_HEADERS = ['Time', 'Assignment', 'Class', 'Name', 'Original file name', 'Saved as',
+                     'Size (KB)', 'Late', 'File / link', 'Assignment ID', 'Class ID'];
+const LINK_MARK = '(link)';
+const LATE_MARK = 'Yes';
+
 function getLogSheet_() {
   const p = props_();
   const id = p.getProperty('LOG_ID');
-  if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (e) {} }
-  const ss = SpreadsheetApp.create('iSubmit 提交登记');
+  if (id) {
+    try {
+      const ss = SpreadsheetApp.openById(id);
+      const sh = ss.getSheets()[0];
+      migrateLog_(ss, sh);
+      return sh;
+    } catch (e) {}
+  }
+  const ss = SpreadsheetApp.create(LOG_NAME);
   DriveApp.getFileById(ss.getId()).moveTo(getRootFolder_());
   const sh = ss.getSheets()[0];
-  sh.appendRow(['提交时间', '作业', '班级', '姓名', '原文件名', '保存文件名', '大小(KB)', '迟交', '文件链接', '作业ID', '班级ID']);
+  sh.appendRow(LOG_HEADERS);
   sh.setFrozenRows(1);
   p.setProperty('LOG_ID', ss.getId());
   return sh;
+}
+
+/** 旧版登记表（中文表名、表头）一次性改成英文 */
+function migrateLog_(ss, sh) {
+  if (sh.getRange(1, 1).getValue() !== '提交时间') return;
+  sh.getRange(1, 1, 1, LOG_HEADERS.length).setValues([LOG_HEADERS]);
+  ss.rename(LOG_NAME);
+  const n = sh.getLastRow() - 1;
+  if (n < 1) return;
+  const linkCol = sh.getRange(2, 5, n, 1), lateCol = sh.getRange(2, 8, n, 1);
+  linkCol.setValues(linkCol.getValues().map(r => [r[0] === '(链接)' ? LINK_MARK : r[0]]));
+  lateCol.setValues(lateCol.getValues().map(r => [r[0] === '是' ? LATE_MARK : r[0]]));
 }
 
 

@@ -118,7 +118,7 @@ Dalam Apps Script, klik **Deploy → Manage deployments** → ikon pensel → Ve
 Apps Script → **Project Settings** → **Script Properties** di bahagian bawah. Padam `ADMIN_HASH`, kemudian buka halaman pentadbir dan tetapkan kata laluan baharu. Kelas, senarai murid dan tugasan tidak terjejas.
 
 **Di manakah kerja murid disimpan?**
-Dalam Google Drive anda, di folder "iSubmit 作业提交", disusun mengikut kelas / tugasan. Hamparan "iSubmit 提交登记" (log penghantaran) dalam folder yang sama merekodkan setiap penghantaran.
+Dalam Google Drive anda, di folder "iSubmit 作业提交", disusun mengikut kelas / tugasan. Hamparan "iSubmit Submission Log" dalam folder yang sama merekodkan setiap penghantaran.
 
 **Adakah had saiz fail?**
 Maksimum 35 MB setiap fail (20 MB secara lalai; boleh diubah di halaman pentadbir). Untuk fail yang lebih besar seperti video, murid boleh menyimpannya dalam Google Drive sendiri dan menampal pautan kongsi di halaman penghantaran.

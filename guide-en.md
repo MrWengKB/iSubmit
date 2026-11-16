@@ -116,7 +116,7 @@ In Apps Script, click **Deploy → Manage deployments** → the pencil icon → 
 Apps Script → **Project Settings** → **Script Properties** at the bottom. Delete `ADMIN_HASH`, then open the admin page and set a new one. Your classes, student lists and assignments are not affected.
 
 **Where is the work saved?**
-In your Google Drive, in the "iSubmit 作业提交" folder, sorted by class / assignment. The "iSubmit 提交登记" (submission log) spreadsheet in the same folder records every submission.
+In your Google Drive, in the "iSubmit 作业提交" folder, sorted by class / assignment. The "iSubmit Submission Log" spreadsheet in the same folder records every submission.
 
 **Is there a file size limit?**
 Up to 35 MB per file (20 MB by default; you can change it on the admin page). For bigger files such as videos, students can save them to their own Google Drive and paste a share link on the submission page.

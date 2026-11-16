@@ -116,7 +116,7 @@ window.ISUBMIT_URL = 'https://script.google.com/macros/s/你的部署ID/exec';
 Apps Script → **项目设置** → 最下方 **脚本属性**，删除 `ADMIN_HASH`，再打开管理页重新设置。班级、名单、作业不受影响。
 
 **作业存在哪里？**
-你的 Google Drive →「iSubmit 作业提交」文件夹，按「班级 / 作业」分类。同一文件夹里的「iSubmit 提交登记」表格记录了每一次提交。
+你的 Google Drive →「iSubmit 作业提交」文件夹，按「班级 / 作业」分类。同一文件夹里的「iSubmit Submission Log」表格记录了每一次提交。
 
 **文件大小有限制吗？**
 单个文件最大 35 MB（默认 20 MB，可在管理页调整）。更大的文件（例如视频），学生可以存到自己的 Google Drive，在提交页填写分享链接。
