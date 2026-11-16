@@ -49,7 +49,7 @@
     </form>
 
     <!-- 提交 -->
-    <form id="form" hidden novalidate>
+    <form id="form" hidden novalidate autocomplete="off">
       <label for="cls">班级</label>
       <select id="cls"></select>
 
@@ -88,10 +88,14 @@ const URL_ = window.ISUBMIT_URL || '';
 const $ = id => document.getElementById(id);
 let cfg = null, code = '', queue = [], busy = false;
 
+// 不在电脑上记住班级和名字（学校电脑共用、家里也可能有兄弟姐妹使用）。
+// 提交口令只在当前标签页内暂存，关掉标签页就清除。
 const store = {
-  get(k){ try{ return JSON.parse(localStorage.getItem('isubmit-'+k)); }catch(_){ return null; } },
-  set(k,v){ try{ localStorage.setItem('isubmit-'+k, JSON.stringify(v)); }catch(_){} },
+  get(k){ try{ return JSON.parse(sessionStorage.getItem('isubmit-'+k)); }catch(_){ return null; } },
+  set(k,v){ try{ sessionStorage.setItem('isubmit-'+k, JSON.stringify(v)); }catch(_){} },
 };
+// 清除旧版本留在电脑上的记录
+try{ localStorage.removeItem('isubmit-me'); localStorage.removeItem('isubmit-code'); }catch(_){}
 
 async function api(body){
   const r = await fetch(URL_, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)});
@@ -133,9 +137,7 @@ async function load(tryCode){
   $('limits').textContent='单个文件 ≤ '+cfg.maxFileMB+' MB'+(cfg.allowedExt.length?'；支持 '+cfg.allowedExt.join(', '):'');
   if(cfg.allowedExt.length) $('picker').accept=cfg.allowedExt.map(e=>'.'+e).join(',');
 
-  const me = store.get('me') || {};
-  if(cfg.classes.some(x=>x.id===me.classId)) c.value=me.classId;
-  fillClass(me.name);
+  fillClass();
   $('form').hidden=false;
 }
 
@@ -203,7 +205,6 @@ async function submit(e){
   if(link && !/^https?:\/\/\S+$/i.test(link)) return showMsg(msg,'err','链接格式不正确，应以 https:// 开头');
   if(!todo.length && !link) return showMsg(msg,'err', queue.length?'没有可提交的文件':'请选择文件或填写分享链接');
 
-  store.set('me',{classId,name});
   busy=true; $('submit').disabled=true; $('submit').textContent='正在提交…';
   const receipts=[]; let failed=0;
 
