@@ -38,3 +38,8 @@ button{font:inherit;cursor:pointer}
 footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
 a{color:var(--accent)}
 @media (max-width:520px){.row{grid-template-columns:1fr}}
+.langs{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.langs button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 11px;font-size:13px;color:var(--muted);line-height:1.4}
+.langs button:hover{border-color:var(--accent);color:var(--accent)}
+.langs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}

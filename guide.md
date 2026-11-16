@@ -16,6 +16,7 @@ index.html        学生提交页
 admin.html        管理页
 config.js         填写 Web App 网址的地方
 style.css         样式
+i18n.js           多语言文字
 apps-script/
   Code.gs         后端代码
 ```
@@ -68,7 +69,7 @@ window.ISUBMIT_URL = 'https://script.google.com/macros/s/你的部署ID/exec';
 
 ### 方式 A：放在自己的服务器
 
-把 `index.html`、`admin.html`、`config.js`、`style.css` 这 4 个文件上传到服务器的网站目录（例如 `/var/www/html/isubmit/`，或者虚拟主机的 `public_html/isubmit/`）。`apps-script` 文件夹不用上传。
+把 `index.html`、`admin.html`、`config.js`、`style.css`、`i18n.js` 这 5 个文件上传到服务器的网站目录（例如 `/var/www/html/isubmit/`，或者虚拟主机的 `public_html/isubmit/`）。`apps-script` 文件夹不用上传。
 
 - 学生提交页：`https://你的域名/isubmit/`
 - 管理页：`https://你的域名/isubmit/admin.html`
