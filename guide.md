@@ -2,7 +2,7 @@
 
 按照下面的步骤，你可以拥有一套自己的 iSubmit，作业会存进**你自己的** Google Drive。全程约 15 分钟，不需要写代码。
 
-你需要：一个 Google 账号、一个 GitHub 账号。
+你需要：一个 Google 账号，以及一个放网页的地方（自己的服务器，或者免费的 GitHub Pages）。
 
 ---
 
@@ -62,7 +62,20 @@ window.ISUBMIT_URL = 'https://script.google.com/macros/s/你的部署ID/exec';
 
 ---
 
-## 第五步：发布网页（GitHub Pages）
+## 第五步：发布网页
+
+网页是纯静态文件（HTML / CSS / JS），不需要数据库，也不需要 PHP、Node 等后端程序，放在任何能提供网页的地方都可以。选一种即可：
+
+### 方式 A：放在自己的服务器
+
+把 `index.html`、`admin.html`、`config.js`、`style.css` 这 4 个文件上传到服务器的网站目录（例如 `/var/www/html/isubmit/`，或者虚拟主机的 `public_html/isubmit/`）。`apps-script` 文件夹不用上传。
+
+- 学生提交页：`https://你的域名/isubmit/`
+- 管理页：`https://你的域名/isubmit/admin.html`
+
+> 建议使用 **https**，因为管理页需要输入密码。学校内网服务器、NAS 自带的网页服务，或者 Netlify、Cloudflare Pages 这类静态网站托管，都可以用。
+
+### 方式 B：GitHub Pages（免费，没有服务器时用）
 
 1. 登录 GitHub，点右上角 **+** → **New repository**。
    - Repository name 填 `iSubmit`
