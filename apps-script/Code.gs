@@ -107,7 +107,7 @@ function submit_(req) {
   const lock = LockService.getScriptLock();
   const safeName = clean_(name, 30);
   const stamp = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss');
-  const latePrefix = late ? '【迟交】' : '';
+  const latePrefix = late ? '[LATE]' : '';
 
   // ---- 提交链接（文件太大时，学生把文件放在自己的 Drive 再分享链接）----
   if (req.link != null) {
@@ -116,7 +116,7 @@ function submit_(req) {
     lock.waitLock(20000);
     try {
       const folder = assignmentFolder_(a, cls);
-      const fileName = latePrefix + safeName + '_链接_' + stamp + '.txt';
+      const fileName = latePrefix + safeName + '_LINK_' + stamp + '.txt';
       const file = folder.createFile(fileName, link + '\n', 'text/plain');
       file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
       getLogSheet_().appendRow([now, a.name, cls.name, name, '(链接)', fileName, '', late ? '是' : '', link, a.id, cls.id]);
@@ -141,7 +141,7 @@ function submit_(req) {
   try {
     const folder = assignmentFolder_(a, cls);
     let fileName = safeName + '_' + origName;
-    if (folder.getFilesByName(fileName).hasNext() || folder.getFilesByName('【迟交】' + fileName).hasNext()) {
+    if (folder.getFilesByName(fileName).hasNext() || folder.getFilesByName('[LATE]' + fileName).hasNext()) {
       fileName = safeName + '_' + stamp + '_' + origName;   // 重复提交：保留旧文件
     }
     fileName = latePrefix + fileName;

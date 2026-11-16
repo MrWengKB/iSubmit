@@ -10,7 +10,7 @@ Students upload their work through a web page straight into the teacher's Google
 - **Admin page**: set up classes and student lists, assignment titles and deadlines, a submission code, allowed file types and size limit, and change the admin password.
 - **Submission overview**: for each assignment, see who in each class has submitted, who hasn't and who was late; copy the list of missing students in one click; open the links students submitted.
 - **Multilingual**: both pages switch between 华文 / English / Bahasa Melayu / தமிழ்.
-- **Automatic filing**: files are saved in Drive by class / assignment and named "Name_original-file-name". Resubmissions keep the earlier files, late files are prefixed with "【迟交】" (late), and every submission is logged in a Google Sheet.
+- **Automatic filing**: files are saved in Drive by class / assignment and named "Name_original-file-name". Resubmissions keep the earlier files, late files are prefixed with "[LATE]", and every submission is logged in a Google Sheet.
 
 ## How it works
 

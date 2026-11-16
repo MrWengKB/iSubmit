@@ -10,7 +10,7 @@ Murid memuat naik kerja melalui halaman web terus ke Google Drive guru, dan tida
 - **Halaman pentadbir**: sediakan kelas dan senarai murid, tajuk dan tarikh akhir tugasan, kod penghantaran, jenis fail yang dibenarkan dan had saiz, serta tukar kata laluan pentadbir.
 - **Gambaran penghantaran**: bagi setiap tugasan, lihat siapa dalam setiap kelas yang telah menghantar, belum menghantar atau lewat; salin senarai murid yang belum hantar dengan satu klik; buka pautan yang dihantar oleh murid.
 - **Pelbagai bahasa**: kedua-dua halaman boleh ditukar antara 华文 / English / Bahasa Melayu / தமிழ்.
-- **Penyusunan automatik**: fail disimpan dalam Drive mengikut kelas / tugasan dan dinamakan "Nama_nama-fail-asal". Penghantaran semula mengekalkan fail terdahulu, fail lewat diberi awalan "【迟交】" (lewat), dan setiap penghantaran direkodkan dalam Google Sheet.
+- **Penyusunan automatik**: fail disimpan dalam Drive mengikut kelas / tugasan dan dinamakan "Nama_nama-fail-asal". Penghantaran semula mengekalkan fail terdahulu, fail lewat diberi awalan "[LATE]", dan setiap penghantaran direkodkan dalam Google Sheet.
 
 ## Cara ia berfungsi
 
