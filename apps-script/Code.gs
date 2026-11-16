@@ -115,7 +115,7 @@ function submit_(req) {
     if (!/^https?:\/\/[^\s<>"]+$/i.test(link) || link.length > 2000) fail_('请输入有效的链接（以 http:// 或 https:// 开头）');
     lock.waitLock(20000);
     try {
-      const folder = classFolder_(a, cls);
+      const folder = assignmentFolder_(a, cls);
       const fileName = latePrefix + safeName + '_链接_' + stamp + '.txt';
       const file = folder.createFile(fileName, link + '\n', 'text/plain');
       file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
@@ -139,7 +139,7 @@ function submit_(req) {
 
   lock.waitLock(20000);
   try {
-    const folder = classFolder_(a, cls);
+    const folder = assignmentFolder_(a, cls);
     let fileName = safeName + '_' + origName;
     if (folder.getFilesByName(fileName).hasNext() || folder.getFilesByName('【迟交】' + fileName).hasNext()) {
       fileName = safeName + '_' + stamp + '_' + origName;   // 重复提交：保留旧文件
@@ -213,12 +213,12 @@ function adminSave_(input) {
     saveData_(data);
     // 名称改了的话，同步重命名已有的 Drive 文件夹
     const p = props_();
-    data.assignments.forEach(a => {
-      const fa = folderFromProp_('FA_' + a.id);
-      if (fa && fa.getName() !== a.name) fa.setName(a.name);
-      data.classes.forEach(c => {
-        const fc = folderFromProp_('FC_' + a.id + '_' + c.id);
-        if (fc && fc.getName() !== c.name) fc.setName(c.name);
+    data.classes.forEach(c => {
+      const fc = folderFromProp_('FK_' + c.id);
+      if (fc && fc.getName() !== c.name) fc.setName(c.name);
+      data.assignments.forEach(a => {
+        const fa = folderFromProp_('FW_' + c.id + '_' + a.id);
+        if (fa && fa.getName() !== a.name) fa.setName(a.name);
       });
     });
   } finally {
@@ -246,14 +246,13 @@ function adminSubmissions_(assignmentId) {
     if (r[7] === '是') o.late = true;
   });
 
-  const fa = folderFromProp_('FA_' + a.id);
   return {
     ok: true,
     assignment: { id: a.id, name: a.name, deadline: a.deadline },
-    folderUrl: fa ? fa.getUrl() : '',
     classes: data.classes.filter(c => a.classIds.indexOf(c.id) !== -1).map(c => ({
       id: c.id,
       name: c.name,
+      folderUrl: (f => f ? f.getUrl() : '')(folderFromProp_('FW_' + c.id + '_' + a.id)),
       students: c.students.map(n => {
         const o = byKey[c.id + '|' + n];
         return { name: n, count: o ? o.count : 0, last: o ? o.last.toISOString() : '', late: o ? o.late : false, links: o ? o.links : [] };
@@ -359,17 +358,18 @@ function folderFromProp_(key) {
   try { return DriveApp.getFolderById(id); } catch (e) { return null; }
 }
 
-function assignmentFolder_(a) {
-  const key = 'FA_' + a.id;
+// Drive 结构：iSubmit 作业提交 / 班级 / 作业 / 文件
+function classFolder_(c) {
+  const key = 'FK_' + c.id;
   let f = folderFromProp_(key);
-  if (!f) { f = getRootFolder_().createFolder(a.name); props_().setProperty(key, f.getId()); }
+  if (!f) { f = getRootFolder_().createFolder(c.name); props_().setProperty(key, f.getId()); }
   return f;
 }
 
-function classFolder_(a, c) {
-  const key = 'FC_' + a.id + '_' + c.id;
+function assignmentFolder_(a, c) {
+  const key = 'FW_' + c.id + '_' + a.id;
   let f = folderFromProp_(key);
-  if (!f) { f = assignmentFolder_(a).createFolder(c.name); props_().setProperty(key, f.getId()); }
+  if (!f) { f = classFolder_(c).createFolder(a.name); props_().setProperty(key, f.getId()); }
   return f;
 }
 

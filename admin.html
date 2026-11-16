@@ -388,8 +388,7 @@ async function loadSubs(){
   r.classes.forEach(c=>c.students.forEach(s=>{ total++; if(s.count) done++; }));
   body.append(el('div',{class:'summary'},
     el('span',{}, el('b',{},String(done)),' / '+total+' 人已提交'),
-    r.assignment.deadline ? el('span',{class:'hint'},'截止 '+fmt(r.assignment.deadline)) : null,
-    r.folderUrl ? el('a',{href:r.folderUrl,target:'_blank',rel:'noopener'},'打开本作业文件夹 ↗') : null));
+    r.assignment.deadline ? el('span',{class:'hint'},'截止 '+fmt(r.assignment.deadline)) : null));
   if(!r.classes.length) body.append(el('div',{class:'empty'},'这份作业没有勾选班级。'));
 
   r.classes.forEach(c=>{
@@ -402,7 +401,8 @@ async function loadSubs(){
         (s.links||[]).map((u,i)=>[' ', el('a',{href:u,target:'_blank',rel:'noopener noreferrer',class:'tag link',title:u},'链接'+((s.links.length>1)?(i+1):'')+' ↗')])),
       el('td',{class:'hint'}, fmt(s.last)))));
     body.append(el('div',{class:'class-block'},
-      el('h3',{}, el('span',{}, c.name+'　',el('span',{class:'count'},(c.students.length-missing.length)+' / '+c.students.length)),
+      el('h3',{}, el('span',{}, c.name+'　',el('span',{class:'count'},(c.students.length-missing.length)+' / '+c.students.length),
+          c.folderUrl ? ['　', el('a',{href:c.folderUrl,target:'_blank',rel:'noopener',style:'font-size:13px;font-weight:400'},'打开文件夹 ↗')] : null),
         missing.length ? el('button',{class:'btn ghost small',type:'button',onclick:async ev=>{
           const t=c.name+' 未交（'+missing.length+'人）：'+missing.join('、');
           try{ await navigator.clipboard.writeText(t); ev.target.textContent='已复制'; }catch(_){ prompt('复制未交名单：',t); }

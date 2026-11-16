@@ -12,7 +12,7 @@
 学生 index.html ─┐
                  ├─▶ Google Apps Script（以老师身份运行）─▶ 老师的 Google Drive
 老师 admin.html ─┘                                          iSubmit 作业提交/
-                                                              ├─ 第1次作业/三年二班/李四_报告.pdf
+                                                              ├─ 三年二班/第1次作业/李四_报告.pdf
                                                               ├─ iSubmit 提交登记（表格）
                                                               └─ iSubmit 设置.json
 ```
