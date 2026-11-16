@@ -29,6 +29,7 @@
     'link.hint': ['分享时请把权限设为「知道链接的任何人都可以查看」，否则老师打不开。', 'When sharing, set access to "Anyone with the link can view", otherwise your teacher can\'t open it.', 'Semasa berkongsi, tetapkan akses kepada "Sesiapa sahaja yang mempunyai pautan boleh melihat", jika tidak guru tidak dapat membukanya.', 'பகிரும்போது அணுகலை "இணைப்பு உள்ள எவரும் பார்க்கலாம்" என அமைக்கவும்; இல்லையெனில் ஆசிரியரால் திறக்க முடியாது.'],
     'btn.submit': ['提交作业', 'Submit', 'Hantar', 'சமர்ப்பி'],
     'btn.submitting': ['正在提交…', 'Submitting…', 'Sedang menghantar…', 'சமர்ப்பிக்கிறது…'],
+    'footer.deploy': ['部署自己的iSubmit', 'Deploy your own iSubmit', 'Pasang iSubmit anda sendiri', 'உங்கள் சொந்த iSubmit-ஐ அமைக்கவும்'],
     'footer': ['可以多次提交，之前的文件会保留。', 'You can submit more than once; earlier files are kept.', 'Anda boleh menghantar lebih daripada sekali; fail terdahulu akan disimpan.', 'நீங்கள் பலமுறை சமர்ப்பிக்கலாம்; முந்தைய கோப்புகள் வைத்திருக்கப்படும்.'],
     'e.notConfigured': ['提交服务尚未配置。', 'The submission service is not set up yet.', 'Perkhidmatan penghantaran belum disediakan.', 'சமர்ப்பிப்புச் சேவை இன்னும் அமைக்கப்படவில்லை.'],
     'e.notConfiguredHint': ['请老师在 config.js 中填写网址。', 'Teacher: please fill in the web address in config.js.', 'Guru: sila isi alamat web dalam config.js.', 'ஆசிரியர்: config.js-இல் இணைய முகவரியை நிரப்பவும்.'],

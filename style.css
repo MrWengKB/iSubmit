@@ -37,6 +37,8 @@ button{font:inherit;cursor:pointer}
 .loading{color:var(--muted);text-align:center;padding:30px 0}
 footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
 a{color:var(--accent)}
+footer a.source{color:var(--muted)}
+footer a.source:hover{color:var(--accent)}
 @media (max-width:520px){.row{grid-template-columns:1fr}}
 .langs{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .langs button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 11px;font-size:13px;color:var(--muted);line-height:1.4}
