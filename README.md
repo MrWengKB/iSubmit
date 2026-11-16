@@ -16,4 +16,4 @@
 
 ## 自己部署
 
-请看 [guide.md](guide.md)。
+部署指南：[华文](guide-zh.md) · [English](guide-en.md) · [Bahasa Melayu](guide-ms.md) · [தமிழ்](guide-ta.md)

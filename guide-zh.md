@@ -1,5 +1,7 @@
 # iSubmit 部署指南
 
+**华文** · [English](guide-en.md) · [Bahasa Melayu](guide-ms.md) · [தமிழ்](guide-ta.md)
+
 按照下面的步骤，你可以拥有一套自己的 iSubmit，作业会存进**你自己的** Google Drive。全程约 15 分钟，不需要写代码。
 
 你需要：一个 Google 账号，以及一个放网页的地方（自己的服务器，或者免费的 GitHub Pages）。
@@ -100,6 +102,8 @@ window.ISUBMIT_URL = 'https://script.google.com/macros/s/你的部署ID/exec';
 4. 在 **设置** 里建议填写 **提交口令**，防止陌生人乱传文件。
 5. 点底部 **保存设置**。
 6. 把学生提交页的网址和提交口令发给学生，就完成了。
+
+两个页面右上角的语言按钮可以切换 华文、English、Bahasa Melayu、தமிழ்。
 
 ---
 
